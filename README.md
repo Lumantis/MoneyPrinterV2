@@ -95,6 +95,59 @@ Ce module permet de trouver des entreprises locales sur Google Maps, d'extraire 
 
 ---
 
+## Schéma du workflow global
+
+```mermaid
+flowchart TD
+    A([Lancement : python src/main.py]) --> B{Menu principal}
+
+    B --> C[🐦 Twitter Bot]
+    B --> D[🎬 YouTube Shorts]
+    B --> E[🛒 Affiliation Amazon]
+    B --> F[📧 Prospection locale]
+    B --> G[🕐 Scheduler CRON]
+
+    %% Twitter
+    C --> C1[Ollama LLM\nGénère le tweet]
+    C1 --> C2[Selenium Firefox\nPoste sur X.com]
+    C2 --> C3[(Cache twitter.json)]
+
+    %% YouTube
+    D --> D1[Ollama LLM\nScript + Métadonnées]
+    D1 --> D2[Gemini API\nGénération d'images 9:16]
+    D2 --> D3[KittenTTS\nVoix off audio WAV]
+    D3 --> D4[Whisper / AssemblyAI\nSous-titres SRT]
+    D4 --> D5[MoviePy + ImageMagick\nMontage vidéo MP4]
+    D5 --> D6[Selenium Firefox\nUpload YouTube Studio]
+    D6 --> D7[(Cache youtube.json)]
+
+    %% Affiliation
+    E --> E1[Selenium\nScraping Amazon]
+    E1 --> E2[Ollama LLM\nGénère le pitch]
+    E2 --> E3[Selenium Firefox\nPoste sur X.com]
+    E3 --> E4[(Cache afm.json)]
+
+    %% Outreach
+    F --> F1[Go Binary\nScraping Google Maps]
+    F1 --> F2[Extraction emails\ndes sites web]
+    F2 --> F3[Ollama LLM\nRédige le message]
+    F3 --> F4[yagmail SMTP\nEnvoi e-mail HTML]
+
+    %% CRON
+    G --> G1{schedule library}
+    G1 -->|Intervalle configuré| G2[subprocess\npython src/cron.py\nplatform account_id]
+    G2 --> C1
+    G2 --> D1
+
+    %% Config commune
+    CFG[(config.json)] -.->|LLM model, API keys,\nFirefox profile, chemins| C1
+    CFG -.-> D1
+    CFG -.-> E1
+    CFG -.-> F1
+```
+
+---
+
 ## Planification automatique (CRON)
 
 MPV2 intègre un scheduler basé sur la bibliothèque Python `schedule`. Il permet de déclencher automatiquement des tâches (publication de tweets, upload de vidéos) à intervalles réguliers, sans interaction humaine. Chaque tâche planifiée lance un sous-processus isolé (`src/cron.py`), ce qui garantit la stabilité même en cas d'erreur.
